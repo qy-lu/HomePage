@@ -20,7 +20,9 @@ main {
 		position: fixed;
 		top: 0;
 		left: 0;
-		background: #060606;
+		//background: #313131; //060606
+		background: -webkit-radial-gradient(circle, #313131, #0a0a0a);
+    	background: radial-gradient(circle, #313131, #0a0a0a);
 	}
 
 	&-inner {
@@ -42,6 +44,7 @@ main {
 }
 
 .grid-background {
+	display: none;
 	position: absolute;
 	top: 0;
 	left: 0;

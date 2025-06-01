@@ -13,7 +13,7 @@
 	},
 	"main": {
 		"name": "Thomas Lu",
-		"signature": "Input & Think & Output",
+		"signature": "Input -> Think -> Output",
 		"avatar": {
 			"link": "assets/avatar2.jpg",
 			"height": "100",
@@ -22,17 +22,17 @@
 		"ul": {
 			"first": {
 				"href": "wordpressZero/",
-				"icon": "hualang",
+				"icon": "gallery",
 				"text": "Gallery"
 			},
 			"second": {
 				"href": "wordpressZero/digital",
-				"icon": "cube",
+				"icon": "blender",
 				"text": "Digital Art"
 			},
 			"third": {
 				"href": "https://board.thomas-hub.com/boards",
-				"icon": "paper-plane",
+				"icon": "dashboard",
 				"text": "Tool Box"
 			},
 			"fourth": {
