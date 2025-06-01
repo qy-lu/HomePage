@@ -1,42 +1,42 @@
 {
 	"head": {
-		"title": "SimonAKing",
-		"description": "Author:SimonAKing,Category:Personal Blog",
-		"favicon": "favicon.ico"
+		"title": "Thomas Hub",
+		"description": "A Personal Home Page",
+		"favicon": "icon.png"
 	},
 	"intro": {
-		"title": "SimonAKing",
-		"subtitle": "Front back left right end engineer",
+		"title": "Thomas Lu",
+		"subtitle": "Personal Website",
 		"enter": "enter",
-		"supportAuthor": true,
+		"supportAuthor": false,
 		"background": true
 	},
 	"main": {
-		"name": "SimonAKing",
-		"signature": "Code & Input & Output",
+		"name": "Thomas Lu",
+		"signature": "Input & Think & Output",
 		"avatar": {
-			"link": "assets/avatar.jpg",
+			"link": "assets/avatar2.jpg",
 			"height": "100",
 			"width": "100"
 		},
 		"ul": {
 			"first": {
-				"href": "blog/",
-				"icon": "bokeyuan",
-				"text": "Blog"
+				"href": "wordpressZero/",
+				"icon": "hualang",
+				"text": "Gallery"
 			},
 			"second": {
-				"href": "about/",
-				"icon": "xiaolian",
-				"text": "About"
+				"href": "wordpressZero/digital",
+				"icon": "cube",
+				"text": "Digital Art"
 			},
 			"third": {
-				"href": "mailto:simon@tomotoes.com",
-				"icon": "email",
-				"text": "Email"
+				"href": "https://board.thomas-hub.com/boards",
+				"icon": "paper-plane",
+				"text": "Tool Box"
 			},
 			"fourth": {
-				"href": "https://github.com/tomotoes",
+				"href": "https://github.com/TheCyberWeaver",
 				"icon": "github",
 				"text": "Github"
 			}
