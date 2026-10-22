@@ -31,6 +31,19 @@ for (const match of html.matchAll(/(?:src|href)="((?:assets|css|js)\/[^"?#]+|ico
 if (fs.lstatSync(dist, { throwIfNoEntry: false })?.isSymbolicLink()) throw Error('dist must not be a symlink');
 fs.rmSync(dist, { recursive: true, force: true });
 fs.cpSync(source, dist, { recursive: true });
+const version = name => crypto.createHash('sha256')
+  .update(fs.readFileSync(path.join(dist, name))).digest('hex').slice(0, 12);
+// Version the dependency chain from leaves to entrypoint, so old browser caches
+// cannot combine a fresh page with an incompatible script or stylesheet.
+const backgroundPath = path.join(dist, 'js/background.js');
+fs.writeFileSync(backgroundPath, fs.readFileSync(backgroundPath, 'utf8')
+  .replace("'assets/background.png'", `'assets/background.png?v=${version('assets/background.png')}'`));
+const mainPath = path.join(dist, 'js/main.js');
+fs.writeFileSync(mainPath, fs.readFileSync(mainPath, 'utf8')
+  .replace("import('./background.js')", `import('./background.js?v=${version('js/background.js')}')`));
+fs.writeFileSync(path.join(dist, 'index.html'), html.replace(
+  /((?:src|href)=")((?:assets|css|js)\/[^"?#]+|icon\.png)(")/g,
+  (_, prefix, name, suffix) => `${prefix}${name}?v=${version(name)}${suffix}`));
 const manifest = Object.fromEntries(names.map(name => [name,
   crypto.createHash('sha256').update(fs.readFileSync(path.join(dist, name))).digest('hex')]));
 fs.mkdirSync(path.join(root, 'release'), { recursive: true });
