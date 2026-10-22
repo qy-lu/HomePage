@@ -4,3 +4,5 @@ release/
 *.log
 .env
 .DS_Store
+*-codex/
+*-claude/
