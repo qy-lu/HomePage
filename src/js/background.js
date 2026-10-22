@@ -23,17 +23,20 @@ SOFTWARE.
 */
 
 export function startFluid(canvas) {
+const events = new AbortController();
 const mobile = matchMedia('(pointer: coarse)').matches;
+const shortSide = Math.min(window.screen?.width || canvas.clientWidth, window.screen?.height || canvas.clientHeight);
+const phone = mobile && shortSide < 600;
 const config = {
-  SIM_RESOLUTION: mobile ? 64 : 128, DYE_RESOLUTION: mobile ? 256 : 512,
+  SIM_RESOLUTION: mobile ? 64 : 128, DYE_RESOLUTION: 512,
   DENSITY_DISSIPATION: 1, VELOCITY_DISSIPATION: 0.2,
   PRESSURE: 0.8, PRESSURE_ITERATIONS: mobile ? 10 : 20, CURL: 30,
   SPLAT_RADIUS: 0.25, SPLAT_FORCE: 6000,
-  SHADING: !mobile, COLORFUL: true, COLOR_UPDATE_SPEED: 10, PAUSED: false,
+  SHADING: true, COLORFUL: true, COLOR_UPDATE_SPEED: 10, PAUSED: false,
   BACK_COLOR: { r: 30, g: 31, b: 33 }, TRANSPARENT: false,
-  BLOOM: !mobile, BLOOM_ITERATIONS: 4, BLOOM_RESOLUTION: 128,
-  BLOOM_INTENSITY: 0.4, BLOOM_THRESHOLD: 0.8, BLOOM_SOFT_KNEE: 0.7,
-  SUNRAYS: false, SUNRAYS_RESOLUTION: 128, SUNRAYS_WEIGHT: 1,
+  BLOOM: true, BLOOM_ITERATIONS: mobile ? 8 : 4, BLOOM_RESOLUTION: 128,
+  BLOOM_INTENSITY: phone ? 0.5 : 0.4, BLOOM_THRESHOLD: phone ? 0.65 : 0.8, BLOOM_SOFT_KNEE: 0.7,
+  SUNRAYS: mobile, SUNRAYS_RESOLUTION: 96, SUNRAYS_WEIGHT: 1,
 };
 resizeCanvas();
 
@@ -56,10 +59,9 @@ pointers.push(new pointerPrototype());
 const { gl, ext } = getWebGLContext(canvas);
 
 if (!ext.supportLinearFiltering) {
-	config.DYE_RESOLUTION = 512;
-	config.SHADING = false;
-	config.BLOOM = false;
-	config.SUNRAYS = false;
+  // The manual advection-filtering shader handles this path. Keep glow passes
+  // enabled with nearest-filtered buffers instead of turning the whole effect off.
+  config.DYE_RESOLUTION = Math.min(config.DYE_RESOLUTION, 512);
 }
 
 function getWebGLContext(canvas) {
@@ -74,8 +76,10 @@ function getWebGLContext(canvas) {
 	let halfFloat;
 	let supportLinearFiltering;
 	if (isWebGL2) {
-		gl.getExtension('EXT_color_buffer_float');
-		supportLinearFiltering = gl.getExtension('OES_texture_float_linear');
+    gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float');
+    // This engine uses 16-bit float textures. Their linear filtering is core
+    // WebGL 2; the optional float32 filtering extension is not a prerequisite.
+    supportLinearFiltering = true;
 	} else {
 		halfFloat = gl.getExtension('OES_texture_half_float');
 		supportLinearFiltering = gl.getExtension('OES_texture_half_float_linear');
@@ -144,6 +148,8 @@ function supportRenderTextureFormat(gl, internalFormat, format, type) {
 	gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
 
 	const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+	gl.deleteTexture(texture);
+	gl.deleteFramebuffer(fbo);
 	return status == gl.FRAMEBUFFER_COMPLETE;
 }
 
@@ -755,6 +761,12 @@ const gradienSubtractProgram = new Program(baseVertexShader, gradientSubtractSha
 
 const displayMaterial = new Material(baseVertexShader, displayShaderSource);
 
+function disposeFBO(target) {
+  if (!target) return;
+  gl.deleteTexture(target.texture);
+  gl.deleteFramebuffer(target.fbo);
+}
+
 function initFramebuffers() {
 	let simRes = getResolution(config.SIM_RESOLUTION);
 	let dyeRes = getResolution(config.DYE_RESOLUTION);
@@ -775,15 +787,21 @@ function initFramebuffers() {
 	else
 		velocity = resizeDoubleFBO(velocity, simRes.width, simRes.height, rg.internalFormat, rg.format, texType, filtering);
 
+  disposeFBO(divergence);
+  disposeFBO(curl);
+  disposeFBO(pressure?.read);
+  disposeFBO(pressure?.write);
 	divergence = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
 	curl = createFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
 	pressure = createDoubleFBO(simRes.width, simRes.height, r.internalFormat, r.format, texType, gl.NEAREST);
 
-	initBloomFramebuffers();
-	initSunraysFramebuffers();
+  if (config.BLOOM) initBloomFramebuffers();
+  if (config.SUNRAYS) initSunraysFramebuffers();
 }
 
 function initBloomFramebuffers() {
+  disposeFBO(bloom);
+  bloomFramebuffers.forEach(disposeFBO);
 	let res = getResolution(config.BLOOM_RESOLUTION);
 
 	const texType = ext.halfFloatTexType;
@@ -805,6 +823,8 @@ function initBloomFramebuffers() {
 }
 
 function initSunraysFramebuffers() {
+  disposeFBO(sunrays);
+  disposeFBO(sunraysTemp);
 	let res = getResolution(config.SUNRAYS_RESOLUTION);
 
 	const texType = ext.halfFloatTexType;
@@ -883,6 +903,7 @@ function resizeFBO(target, w, h, internalFormat, format, type, param) {
 	copyProgram.bind();
 	gl.uniform1i(copyProgram.uniforms.uTexture, target.attach(0));
 	blit(newFBO.fbo);
+  disposeFBO(target);
 	return newFBO;
 }
 
@@ -890,6 +911,7 @@ function resizeDoubleFBO(target, w, h, internalFormat, format, type, param) {
 	if (target.width == w && target.height == h)
 		return target;
 	target.read = resizeFBO(target.read, w, h, internalFormat, format, type, param);
+  disposeFBO(target.write);
 	target.write = createFBO(w, h, internalFormat, format, type, param);
 	target.width = w;
 	target.height = h;
@@ -1374,22 +1396,60 @@ function hashCode(s) {
 };
 
 
-// Passive pointer listeners leave all page navigation to the application.
+function pointerFor(id) {
+  let pointer = pointers.find(value => value.id === id);
+  if (!pointer) {
+    pointer = pointers.find(value => !value.down);
+    if (!pointer) { pointer = new pointerPrototype(); pointers.push(pointer); }
+  }
+  return pointer;
+}
+
+// Mouse/pen and Touch Events are separate streams; each finger owns its slot.
 document.addEventListener('pointerdown', event => {
-  if (!active || !event.isPrimary) return;
-  updatePointerDownData(pointers[0], event.pointerId,
+  if (!active || event.pointerType === 'touch' || !event.isPrimary) return;
+  updatePointerDownData(pointerFor(event.pointerId), event.pointerId,
     scaleByPixelRatio(event.clientX), scaleByPixelRatio(event.clientY));
-}, { passive: true });
+}, { passive: true, signal: events.signal });
 document.addEventListener('pointermove', event => {
-  if (!active || !event.isPrimary || !pointers[0].down) return;
-  updatePointerMoveData(pointers[0], scaleByPixelRatio(event.clientX), scaleByPixelRatio(event.clientY));
-}, { passive: true });
+  if (!active || event.pointerType === 'touch' || !event.isPrimary) return;
+  const pointer = pointers.find(value => value.id === event.pointerId && value.down);
+  if (pointer) updatePointerMoveData(pointer, scaleByPixelRatio(event.clientX), scaleByPixelRatio(event.clientY));
+}, { passive: true, signal: events.signal });
 for (const eventName of ['pointerup', 'pointercancel']) {
-  document.addEventListener(eventName, () => updatePointerUpData(pointers[0]), { passive: true });
+  document.addEventListener(eventName, event => {
+    if (event.pointerType === 'touch') return;
+    const pointer = pointers.find(value => value.id === event.pointerId);
+    if (pointer) updatePointerUpData(pointer);
+  }, { passive: true, signal: events.signal });
+}
+document.addEventListener('touchstart', event => {
+  if (!active) return;
+  for (const touch of Array.from(event.changedTouches)) {
+    const id = `touch-${touch.identifier}`;
+    updatePointerDownData(pointerFor(id), id, scaleByPixelRatio(touch.clientX), scaleByPixelRatio(touch.clientY));
+  }
+}, { passive: true, signal: events.signal });
+document.addEventListener('touchmove', event => {
+  if (!active) return;
+  for (const touch of Array.from(event.touches)) {
+    const pointer = pointers.find(value => value.id === `touch-${touch.identifier}` && value.down);
+    if (pointer) updatePointerMoveData(pointer, scaleByPixelRatio(touch.clientX), scaleByPixelRatio(touch.clientY));
+  }
+}, { passive: true, signal: events.signal });
+for (const eventName of ['touchend', 'touchcancel']) {
+  document.addEventListener(eventName, event => {
+    for (const touch of Array.from(event.changedTouches)) {
+      const pointer = pointers.find(value => value.id === `touch-${touch.identifier}`);
+      if (pointer) updatePointerUpData(pointer);
+    }
+  }, { passive: true, signal: events.signal });
 }
 updateKeywords();
 initFramebuffers();
-multipleSplats(mobile ? 2 : 5);
+// Desktop returns to the softer accepted release; retain the tablet's current
+// appearance and make the phone's first frame reliably populated.
+multipleSplats(mobile ? (phone ? 12 : Math.floor(Math.random() * 20) + 5) : 5);
 render(null);
-return { setActive };
+return { setActive, dispose() { setActive(false); events.abort(); } };
 }

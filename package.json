@@ -6,11 +6,13 @@
   "description": "Thomas Hub — a small static personal homepage",
   "license": "LGPL-3.0-only",
   "repository": "https://github.com/qy-lu/HomePage",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node scripts/preview.mjs",
     "build": "node scripts/build.mjs",
     "package": "node scripts/package.mjs",
-    "test": "node --test scripts/navigation.test.mjs"
+    "test": "node --test scripts/navigation.test.mjs scripts/fluid.test.mjs"
   }
 }
