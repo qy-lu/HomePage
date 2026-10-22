@@ -27,7 +27,7 @@ scripts/                构建、预览、测试、受限部署
 docs/production-baseline/ 首次上线基线与回滚记录
 ```
 
-`npm run build` 生成 `dist/`，检查脚本语法与本地资源引用。
+`npm run build` 生成 `dist/`，检查脚本语法与本地资源引用，并为静态资源添加内容版本标记，避免浏览器混用旧缓存。
 `npm test` 检查手势回弹、双向切换、键盘、惯性滚轮，以及 PC 拖动时背景继续运行等逻辑。
 `npm run package` 生成待发布包；打包不等于上线。
 
