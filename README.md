@@ -63,7 +63,10 @@ docs/production-baseline/ 首次上线基线与回滚记录
 
 **UI 修改先由用户本地验收，再获得明确上线授权后发布。**
 部署工具保留完整备份、服务器差异检查、原子替换和回滚机制。
-首次 UI 发布仍以 `docs/production-baseline/live-manifest.json` 检查旧生产状态，
+当前线上版本清单为 `docs/production-manifest.json`，部署前先检查服务器与该清单一致，
 仅替换当前源码实际包含的文件；旧的无用服务器图片不自动删除。
 后续部署用上一发布清单作 `-ExpectedManifest`，且发布前后检查独立服务。
 WordPress、Jupyter、AskPool、Obsidian、动漫维护页和 Apache 配置均不在修改范围。
+
+
+生产发布编号、永久备份与回滚命令见 [部署与恢复](docs/deployment.md)。

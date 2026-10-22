@@ -5,7 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (-not $ExpectedManifest) { $ExpectedManifest = Join-Path $projectRoot 'docs/production-baseline/live-manifest.json' }
+if (-not $ExpectedManifest) { $ExpectedManifest = Join-Path $projectRoot 'docs/production-manifest.json' }
 $ExpectedManifest = (Resolve-Path -LiteralPath $ExpectedManifest).Path
 Push-Location $projectRoot
 try {
