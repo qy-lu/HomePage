@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#1e1f21">
+    <meta name="description" content="A Personal Home Page">
+    <title>Thomas Hub</title>
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="stylesheet" href="css/style.css">
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <div class="background" aria-hidden="true">
+      <canvas id="background"></canvas>
+    </div>
+
+    <main class="pages" aria-label="Thomas Hub">
+      <section class="page intro" id="intro" aria-labelledby="intro-title">
+        <div class="intro-content">
+          <h1 id="intro-title">Thomas Lu</h1>
+          <p class="subtitle">A Geek. A Visual Creator. An Aspiring Full-Stack Engineer.</p>
+          <a class="enter" href="#links">enter</a>
+        </div>
+        <a class="page-cue next" href="#links" aria-label="Explore links">
+          <span class="chevron" aria-hidden="true"></span>
+        </a>
+      </section>
+
+      <section class="page links" id="links" aria-labelledby="profile-title">
+        <a class="page-cue previous" href="#intro" aria-label="Back to introduction">
+          <span class="chevron" aria-hidden="true"></span>
+        </a>
+        <div class="profile">
+          <header>
+            <img class="avatar" src="assets/DE-Exp.png" width="100" height="100" alt="Thomas Lu">
+            <h2 id="profile-title">Thomas Lu</h2>
+            <p class="signature">Input -&gt; Think -&gt; Output</p>
+          </header>
+          <nav aria-label="Personal links">
+            <ul class="link-list">
+              <li><a href="https://thomas-hub.com/wordpressZero/">
+                <img src="assets/gallery.svg" width="32" height="32" alt="">
+                <span>Gallery</span>
+              </a></li>
+              <li><a href="https://thomas-hub.com/wordpressZero/digital">
+                <img src="assets/blender.svg" width="32" height="32" alt="">
+                <span>Digital Art</span>
+              </a></li>
+              <li><a href="https://obvault.thomas-hub.com/" target="_blank" rel="noopener noreferrer">
+                <img src="assets/investbrain-light.png" width="32" height="32" alt="">
+                <span>Knowledge Garden</span>
+              </a></li>
+              <li><a href="https://github.com/qy-lu" target="_blank" rel="noopener noreferrer">
+                <img src="assets/github.svg" width="32" height="32" alt="">
+                <span>Github</span>
+              </a></li>
+              <li><a href="https://board.thomas-hub.com/boards" target="_blank" rel="noopener noreferrer">
+                <img src="assets/dashboard.svg" width="32" height="32" alt="">
+                <span>More</span>
+              </a></li>
+            </ul>
+          </nav>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

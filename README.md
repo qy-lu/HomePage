@@ -1,165 +1,69 @@
-# SimonAKing-HomePage
+# Thomas Hub
 
-[中文版说明](<README.zh_CN.md>)
+本地仓库：`D:\thomas-hub`。普通 HTML、CSS、JavaScript，无框架、无 npm 依赖。
+本地开发与生产发布使用同一套静态源码；每次发布先备份并校验，再更新主页。
 
-## Introduction
-
-> A modern and elegant personal homepage with fluid animation background, responsive design and smooth page transitions.
-
-![preview](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMncyb3oyc21zc3czejU3cGk4M2tiNTdkaTM0N3FodGVpZmU5azNxaCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fhXFCZEogq39rOpKUi/giphy.gif)
-
-[Online browsing](http://simonaking.com)
-
-Do you want to install such a cool homepage for your website?
-
-Let's start now!
-
-## Install
-
-```sh
-git clone https://github.com/SimonAKing/HomePage.git
-cd HomePage
-npm install
+```powershell
+cd D:\thomas-hub
 npm run dev
 ```
 
-## Features
+打开 http://localhost:8080/ ，或 http://localhost:8080/__review 查看手机、小屏、横屏与桌面尺寸。
+修改文件后重新启动预览，再刷新浏览器。
+手机验收可在同一可信 Wi-Fi 下运行 `npm run dev -- --lan`，打开终端显示的 LAN 地址。
+本机防火墙若限制访问，优先在电脑浏览器的移动设备预览中验收。
 
-1. Highly encapsulates all the information in the page
-2. Use [WebGL-Fluid-Simulation](https://github.com/PavelDoGreat/WebGL-Fluid-Simulation/) as background
-3. Use `less` as `css` preprocessor
-4. Use `pug` as `html` preprocessor
-5. Use `gulp` as a build tool and configure the build script
-6. Comfortable animation and beautiful UI
-7. Responsive, mobile support
-8. The referenced `css` and`js` files do not exceed `18.5` kb in total!
-9. Delayed response switch page event
-10. There are many features left for you to explore...
+## 结构
 
-
-## Structure
-
-According to the characteristics of the project, it is divided into two categories：
-1. `intro` First screen
-2. `main` Secondary screen
-
-The corresponding functions, styles and configurations are also based on this standard.
-
-
-
-## Basic configuration
-
-Each key name in the config.json file`config.json` corresponds to the corresponding component name.
-
-such as：
-
-```json
-{
-	"head": {
-		"title": "SimonAKing",
-		"description": "Category:Personal Blog",
-		"favicon": "favicon.ico"
-	}
-}
-
-```
-The above configuration information corresponds to the information in the following `layout/head.pug` component.
-```html
-head
-	title #{head.title}
-	meta(charset="utf-8")
-	meta(name="Description" content=`${head.description}`)
-	link(rel="icon" href=`${head.favicon}` type="image/x-icon")
+```text
+src/
+  index.html            页面内容与链接
+  css/style.css         布局、样式、响应式适配
+  js/main.js            双向切换、阻尼、键盘和滚轮
+  js/background.js      保留的 WebGL 流体背景，独立模块
+  assets/               页面实际使用的 7 个图片/图标
+  icon.png
+scripts/                构建、预览、测试、受限部署
+docs/production-baseline/ 首次上线基线与回滚记录
 ```
 
+`npm run build` 生成 `dist/`，检查脚本语法与本地资源引用。
+`npm test` 检查手势回弹、双向切换、键盘、惯性滚轮，以及 PC 拖动时背景继续运行等逻辑。
+`npm run package` 生成待发布包；打包不等于上线。
 
+已经移除旧 Gulp/Pug/Less 构建链、900 多项间接依赖、重复源文件、
+未使用图片、波浪 SVG、anime.js、旧浏览器补丁、自定义鼠标 CDN 请求和失效的单向切换代码。
+保留原有 Comic Neue 字体，只请求使用到的两个字重；字体不可用时使用系统字体。
+原始实现和历史可从 Git 起点及 C 盘首次恢复副本查阅，无需在活跃源码中保留第二套实现。
+背景引擎保留原作者 MIT 许可，主页模板保留原仓库 LICENSE。
 
-## Advanced configuration
+## 切换手感
 
-### WebGL-Fluid-Simulation
+两页共用固定背景，透明内容层移动，没有波浪和页面背景交界。
+手指拖动距离以 0.72 倍映射到页面，松手后以阻尼弹簧收住。
+轻拖回原页；拖过约 22% 屏幕或明确快速滑动时切换。上推进入链接页，下拉返回简介。
+鼠标滚轮累计到阈值后切换，连续惯性事件只触发一次；按钮和键盘也支持往返。
 
-Use [WebGL-Fluid-Simulation](https://github.com/PavelDoGreat/WebGL-Fluid-Simulation/) as background at home.
+移动端限制背景分辨率、关闭昂贵后处理；触屏切换/拖动期间暂停流体计算，
+链接页和后台标签页停止背景渲染。开启系统“减少动态效果”后取消弹簧与流体。
+放大字号或极矮屏幕发生内容溢出时优先允许内容自然滚动，使用上下箭头切换页面。
 
-If you want to turn it off, set `intro.background: false`.
+手感集中在 `src/js/main.js`：`resistance`（跟手系数）、`threshold`（切换门槛）、
+弹簧刚度 180 和阻尼 27。保持这几个参数直观可调，不另建配置框架。
 
-### supportAuthor
+## 本地验收重点
 
-The `supportAuthor` option is turned on by default for configuration information, that is, authors are supported.
+1. 轻轻上推松手应回弹；明确上推进入第二页，下拉可返回，可连续往返。
+2. 切换中没有波浪、白闪或背景拼接边；点 enter 和上下箭头也可以切换。
+3. 手机竖屏、横屏、旋转后内容完整；五个导航地址、头像和文案保持原意。
+4. 滚轮惯性不连续误翻页；Tab 能进入当前页的链接，PageUp/PageDown 可往返。
+5. 设备不支持 WebGL 或开启减少动态效果时，基础内容与导航仍可用。
 
-All support items are as follows：
+## 上线边界
 
-1. The `octopus cat` will be displayed in the upper right corner of the home page.
-2. The console prints the author's site information
-
-If you want to turn it off, set `intro.author: false`.
-
-
-### Icon replacement
-Icons in the project, all from [阿里巴巴矢量图标库](https://www.iconfont.cn)
-
-The replacement steps are as follows:
-
-1. Please select your icon, add it to the project, and change the color to white.
-2. Click Font Class method
-3. Copy the contents of the generated link
-4. Replace the contents of the file `/src/css/common/icon.less`, where the contents of the `icon` selector must be preserved.
-5. Config.json the corresponding item in the `config.json`file`main.ul. * .icon`
-
-```css
-.icon {
-	display: block;
-	width: 1.5em;
-	height: 1.5em;
-	margin: 0 auto;
-	fill: currentColor;
-	font-family: 'iconfont' !important;
-	font-size: inherit;
-	font-style: normal;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-}
-```
-
-
-
-## Deployment
-
-After executing `npm run build` under the root directory, the project file will be generated to the `dist` directory.
-
-You can then deploy the dist directory to your favorite server hosting provider.
-
-The following is an example of `GithubPage`:
-
-1. create `userName.github.io` Repo
-
-2. ```sh
-   cd dist
-   git init
-   git add -A
-   git commit -am"init"
-   git remote add origin https://github.com/userName/userName.github.io.git
-   git push -f origin master
-   ```
-
-3. Then set the repo's Github Page option in GitHub.
-
-4. Visit `username.github.io` to browse!
-
-
-
-If your previous `username. github.io` repo already has content, you can create another repo, such as `blog`.
-
- Then migrate the occupied items to `blog` and set the `GithubPage` option for this repo.
-
- The repo became a subdirectory of `username. github.io/blog`.
-
- In this way, your `username. github.io` repo can be left to the home page!
-
-
-
-## Sponsor
-I spent a lot of time and energy to develop this project.
-
-If this project has brought you help, welcome to sponsor, `star`.
-
-Thank you!
+**UI 修改先由用户本地验收，再获得明确上线授权后发布。**
+部署工具保留完整备份、服务器差异检查、原子替换和回滚机制。
+首次 UI 发布仍以 `docs/production-baseline/live-manifest.json` 检查旧生产状态，
+仅替换当前源码实际包含的文件；旧的无用服务器图片不自动删除。
+后续部署用上一发布清单作 `-ExpectedManifest`，且发布前后检查独立服务。
+WordPress、Jupyter、AskPool、Obsidian、动漫维护页和 Apache 配置均不在修改范围。

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thomas Hub · 本地验收</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #e9eaec; color: #202329; font: 15px system-ui, sans-serif; }
+  header { padding: 20px 24px; background: #fff; border-bottom: 1px solid #ddd; }
+  h1 { margin: 0 0 8px; font-size: 20px; }
+  p { margin: 6px 0; color: #555; }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  button, a { border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; background: #fff; color: #222; text-decoration: none; cursor: pointer; font: inherit; }
+  button[aria-pressed="true"] { background: #26292e; color: #fff; }
+  main { padding: 24px; overflow: auto; }
+  .device { position: relative; margin: auto; }
+  iframe { position: absolute; top: 0; left: 0; display: block; border: 0; border-radius: 12px; background: #1e1f21; box-shadow: 0 4px 24px #0002; transform-origin: top left; }
+</style>
+<header>
+  <h1>Thomas Hub · 本地验收</h1>
+  <p>按住页面上下拖动，体验阻力、回弹和双向切换；也可以点击 enter、上下箭头或使用滚轮。</p>
+  <p>这里检查不同屏幕布局。真实触屏手感请用同一网络下的手机验收。</p>
+  <nav aria-label="预览尺寸">
+    <button data-size="390,844" aria-pressed="true">手机 390 × 844</button>
+    <button data-size="320,568" aria-pressed="false">小屏 320 × 568</button>
+    <button data-size="844,390" aria-pressed="false">横屏 844 × 390</button>
+    <button data-size="1280,800" aria-pressed="false">桌面 1280 × 800</button>
+    <a href="/" target="_blank" rel="noopener">打开完整页面</a>
+  </nav>
+</header>
+<main><div class="device"><iframe src="/" width="390" height="844" title="主页预览"></iframe></div></main>
+<script>
+  const frame = document.querySelector('iframe');
+  function fit() {
+    const scale = Math.min(1, (innerWidth - 48) / frame.width,
+      Math.max(240, innerHeight - document.querySelector('header').offsetHeight - 48) / frame.height);
+    frame.style.transform = `scale(${scale})`;
+    document.querySelector('.device').style.width = `${frame.width * scale}px`;
+    document.querySelector('.device').style.height = `${frame.height * scale}px`;
+  }
+  document.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+    document.querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    [frame.width, frame.height] = button.dataset.size.split(',');
+    fit();
+  }));
+  addEventListener('resize', fit);
+  fit();
+</script>
+</html>

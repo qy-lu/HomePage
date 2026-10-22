@@ -22,9 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-'use strict';
-
-const canvas = document.getElementById('background');
+export function startFluid(canvas) {
+const mobile = matchMedia('(pointer: coarse)').matches;
+const config = {
+  SIM_RESOLUTION: mobile ? 64 : 128, DYE_RESOLUTION: mobile ? 256 : 512,
+  DENSITY_DISSIPATION: 1, VELOCITY_DISSIPATION: 0.2,
+  PRESSURE: 0.8, PRESSURE_ITERATIONS: mobile ? 10 : 20, CURL: 30,
+  SPLAT_RADIUS: 0.25, SPLAT_FORCE: 6000,
+  SHADING: !mobile, COLORFUL: true, COLOR_UPDATE_SPEED: 10, PAUSED: false,
+  BACK_COLOR: { r: 30, g: 31, b: 33 }, TRANSPARENT: false,
+  BLOOM: !mobile, BLOOM_ITERATIONS: 4, BLOOM_RESOLUTION: 128,
+  BLOOM_INTENSITY: 0.4, BLOOM_THRESHOLD: 0.8, BLOOM_SOFT_KNEE: 0.7,
+  SUNRAYS: false, SUNRAYS_RESOLUTION: 128, SUNRAYS_WEIGHT: 1,
+};
 resizeCanvas();
 
 function pointerPrototype() {
@@ -41,14 +51,10 @@ function pointerPrototype() {
 }
 
 let pointers = [];
-let splatStack = [];
 pointers.push(new pointerPrototype());
 
 const { gl, ext } = getWebGLContext(canvas);
 
-if (isMobile()) {
-	config.DYE_RESOLUTION = 512;
-}
 if (!ext.supportLinearFiltering) {
 	config.DYE_RESOLUTION = 512;
 	config.SHADING = false;
@@ -64,6 +70,7 @@ function getWebGLContext(canvas) {
 	if (!isWebGL2)
 		gl = canvas.getContext('webgl', params) || canvas.getContext('experimental-webgl', params);
 
+	if (!gl) throw new Error('WebGL is not available');
 	let halfFloat;
 	let supportLinearFiltering;
 	if (isWebGL2) {
@@ -76,6 +83,7 @@ function getWebGLContext(canvas) {
 
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
+	if (!isWebGL2 && !halfFloat) throw new Error('Floating-point textures are not available');
 	const halfFloatTexType = isWebGL2 ? gl.HALF_FLOAT : halfFloat.HALF_FLOAT_OES;
 	let formatRGBA;
 	let formatRG;
@@ -139,9 +147,6 @@ function supportRenderTextureFormat(gl, internalFormat, format, type) {
 	return status == gl.FRAMEBUFFER_COMPLETE;
 }
 
-function isMobile() {
-	return /Mobi|Android/i.test(navigator.userAgent);
-}
 
 class Material {
 	constructor(vertexShader, fragmentShaderSource) {
@@ -936,28 +941,20 @@ function updateKeywords() {
 let lastUpdateTime = Date.now();
 let colorUpdateTimer = 0.0;
 
-const changeColor = () => {
-	document.querySelector('.content-inner').style.background = 'unset'
-	document.querySelector('.shape').style.fill = '#1e1f21'
+let animationID = null;
+let active = false;
+function setActive(value) {
+  if (active === value) return;
+  active = value;
+  cancelAnimationFrame(animationID);
+  if (active) {
+    lastUpdateTime = Date.now();
+    animationID = requestAnimationFrame(update);
+  }
 }
 
-const initBackground = () => {
-	if (initBackground.loaded) {
-		return
-	}
-	initBackground.loaded = true
-	changeColor()
-	updateKeywords();
-	initFramebuffers();
-	multipleSplats(parseInt(Math.random() * 20) + 5);
-	update(true)
-}
-
-window.addEventListener(visibilityChangeEvent, initBackground)
-window.addEventListener('DOMContentLoaded', initBackground)
-let animationID = null
-
-function update(first) {
+function update() {
+	if (!active) return;
 	const dt = calcDeltaTime();
 	if (resizeCanvas())
 		initFramebuffers();
@@ -1001,9 +998,6 @@ function updateColors(dt) {
 }
 
 function applyInputs() {
-	if (splatStack.length > 0)
-		multipleSplats(splatStack.pop());
-
 	pointers.forEach(p => {
 		if (p.moved) {
 			p.moved = false;
@@ -1257,22 +1251,6 @@ function correctRadius(radius) {
 	return radius;
 }
 
-window.addEventListener('touchend', e => {
-	const touches = e.changedTouches;
-	for (let i = 0; i < touches.length; i++) {
-		let pointer = pointers.find(p => p.id == touches[i].identifier);
-		if (pointer == null) continue;
-		updatePointerUpData(pointer);
-	}
-});
-
-window.addEventListener('keydown', e => {
-	if (e.code === 'KeyP')
-		config.PAUSED = !config.PAUSED;
-	if (e.key === ' ')
-		splatStack.push(parseInt(Math.random() * 20) + 5);
-});
-
 function updatePointerDownData(pointer, id, posX, posY) {
 	pointer.id = id;
 	pointer.down = true;
@@ -1381,7 +1359,7 @@ function getTextureScale(texture, width, height) {
 }
 
 function scaleByPixelRatio(input) {
-	let pixelRatio = window.devicePixelRatio || 1;
+	let pixelRatio = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.5);
 	return Math.floor(input * pixelRatio);
 }
 
@@ -1395,77 +1373,23 @@ function hashCode(s) {
 	return hash;
 };
 
-document.addEventListener("mousedown", e => {
-	if (switchPage && switchPage.switched) {
-		return
-	}
-	let posX = scaleByPixelRatio(e.pageX);
-	let posY = scaleByPixelRatio(e.pageY);
-	let pointer = pointers.find(p => p.id == -1);
-	if (pointer == null) pointer = new pointerPrototype();
-	updatePointerDownData(pointer, -1, posX, posY);
-});
 
-document.addEventListener("mousemove", e => {
-	if (switchPage && switchPage.switched) {
-		return
-	}
-	let pointer = pointers[0];
-	if (!pointer.down) return;
-	let posX = scaleByPixelRatio(e.pageX);
-	let posY = scaleByPixelRatio(e.pageY);
-	updatePointerMoveData(pointer, posX, posY);
-});
-
-document.addEventListener("mouseup", () => {
-	if (switchPage && switchPage.switched) {
-		return
-	}
-	updatePointerUpData(pointers[0]);
-});
-
-document.addEventListener("touchstart", e => {
-	if (switchPage && switchPage.switched) {
-		return
-	}
-	e.preventDefault();
-	const touches = e.targetTouches;
-	while (touches.length >= pointers.length)
-		pointers.push(new pointerPrototype());
-	for (let i = 0; i < touches.length; i++) {
-		let posX = scaleByPixelRatio(touches[i].pageX);
-		let posY = scaleByPixelRatio(touches[i].pageY);
-		updatePointerDownData(pointers[i + 1], touches[i].identifier, posX, posY);
-	}
-});
-
-document.addEventListener(
-	"touchmove",
-	e => {
-		if (switchPage && switchPage.switched) {
-			return
-		}
-		e.preventDefault();
-		const touches = e.targetTouches;
-		for (let i = 0; i < touches.length; i++) {
-			let pointer = pointers[i + 1];
-			if (!pointer.down) continue;
-			let posX = scaleByPixelRatio(touches[i].pageX);
-			let posY = scaleByPixelRatio(touches[i].pageY);
-			updatePointerMoveData(pointer, posX, posY);
-		}
-	},
-	false
-);
-
-document.addEventListener("touchend", e => {
-	if (switchPage && switchPage.switched) {
-		return
-	}
-	const touches = e.changedTouches;
-	for (let i = 0; i < touches.length; i++) {
-		let pointer = pointers.find(p => p.id == touches[i].identifier);
-		if (pointer == null) continue;
-		updatePointerUpData(pointer);
-	}
-});
+// Passive pointer listeners leave all page navigation to the application.
+document.addEventListener('pointerdown', event => {
+  if (!active || !event.isPrimary) return;
+  updatePointerDownData(pointers[0], event.pointerId,
+    scaleByPixelRatio(event.clientX), scaleByPixelRatio(event.clientY));
+}, { passive: true });
+document.addEventListener('pointermove', event => {
+  if (!active || !event.isPrimary || !pointers[0].down) return;
+  updatePointerMoveData(pointers[0], scaleByPixelRatio(event.clientX), scaleByPixelRatio(event.clientY));
+}, { passive: true });
+for (const eventName of ['pointerup', 'pointercancel']) {
+  document.addEventListener(eventName, () => updatePointerUpData(pointers[0]), { passive: true });
+}
+updateKeywords();
+initFramebuffers();
+multipleSplats(mobile ? 2 : 5);
+render(null);
+return { setActive };
+}
